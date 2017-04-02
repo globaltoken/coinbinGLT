@@ -819,6 +819,11 @@ $(document).ready(function() {
 				$("#redeemFromStatus").removeClass('hidden').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Unexpected error, unable to retrieve unspent outputs!');
 			},
 			success: function(data) {
+				if(data[0] == undefined)
+				{
+					var json = '[{"address":"'+redeem.addr+'","txid":"[]"}]';
+					data = $.parseJSON(json);
+				}
 				if((data[0].address && data[0].txid) && data[0].address==redeem.addr){
 					$("#redeemFromAddress").removeClass('hidden').html('<span class="glyphicon glyphicon-info-sign"></span> Retrieved unspent inputs from address <a href="http://explorer.globaltoken.org/address/'+redeem.addr+'" target="_blank">'+redeem.addr+'</a>');
 					for(var i in data){
