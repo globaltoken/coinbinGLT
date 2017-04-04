@@ -21,7 +21,7 @@
 	coinjs.developer = 'GUsQEsFnJkYi1HLEmPGqfz6LMvyMx3RAkT'; // globaltoken
 
 	/* bit(coinb.in) api vars */
-	coinjs.host = ('https:'==document.location.protocol?'https://':'http://')+'features.globaltoken.org/coinbin/api/';
+	coinjs.host = ('https:'==document.location.protocol?'https://':'http://')+'explorer.globaltoken.org/api/';
 	coinjs.uid = '1';
 	coinjs.key = '12345678901234567890123456789012';
 
@@ -273,7 +273,7 @@
 
 	/* retreive the balance from a given address */
 	coinjs.addressBalance = function(address, callback){
-		coinjs.ajax(coinjs.host+'?uid='+coinjs.uid+'&key='+coinjs.key+'&setmodule=addresses&request=bal&address='+address+'&r='+Math.random(), callback, "GET");
+		coinjs.ajax(coinjs.host+'addr/'+address+'/balance', callback, "GET");
 	}
 
 	/* decompress an compressed public key */
@@ -1465,7 +1465,7 @@
 
 	/* raw ajax function to avoid needing bigger frame works like jquery, mootools etc */
 	coinjs.ajax = function(u, f, m, a){
-		var x = false;
+		/*var x = false;
 		try{
 			x = new ActiveXObject('Msxml2.XMLHTTP')
 		} catch(e) {
@@ -1490,7 +1490,23 @@
 			x.setRequestHeader('Content-type','application/x-www-form-urlencoded');
 		}
 
-		x.send(a);
+		x.send(a);*/
+		
+		$.ajax ({
+			type: m,
+			cache: false,
+			url: u,
+			dataType: "json",
+			error: function(data) {
+				f(data);
+			},
+			success: function(data) {
+				f(data);
+			},
+			complete: function(data, status) {
+				f(data);
+			}
+		});
 	}
 
 	/* clone an object */

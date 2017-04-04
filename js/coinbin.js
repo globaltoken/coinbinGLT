@@ -26,7 +26,7 @@ $(document).ready(function() {
 					var keys = coinjs.newKeys(s);
 
 					$("#walletAddress").html(keys.address);
-					$("#walletHistory").attr('href','http://explorer.globaltoken.org/address/'+keys.address);
+					$("#walletHistory").attr('href','https://explorer.globaltoken.org/address/'+keys.address);
 
 					$("#walletQrCode").html("");
 					var qrcode = new QRCode("walletQrCode");
@@ -63,7 +63,7 @@ $(document).ready(function() {
 		$("#openWallet").addClass("hidden").show();
 
 		$("#walletAddress").html("");
-		$("#walletHistory").attr('href','http://explorer.globaltoken.org/address/');
+		$("#walletHistory").attr('href','https://explorer.globaltoken.org/address/');
 
 		$("#walletQrCode").html("");
 		var qrcode = new QRCode("walletQrCode");
@@ -229,8 +229,10 @@ $(document).ready(function() {
 		var tx = coinjs.transaction();
 		$("#walletLoader").removeClass("hidden");
 		coinjs.addressBalance($("#walletAddress").html(),function(data){
-			if($(data).find("result").text()==1){
-				var v = $(data).find("balance").text()/100000000;
+			var json = '[{"balance":"'+data[0]+'"}]';
+			data = $.parseJSON(json);
+			if(data[0].balance > 1){
+				var v = data[0].balance/100000000;
 				$("#walletBalance").html(v+" GLT").attr('rel',v).fadeOut().fadeIn();
 			} else {
 				$("#walletBalance").html("0.00 GLT").attr('rel',v).fadeOut().fadeIn();
@@ -813,7 +815,7 @@ $(document).ready(function() {
 		$.ajax ({
 			type: "GET",
 			cache: false,
-			url: "http://explorer.globaltoken.org/api/addr/"+redeem.addr+"/utxo",
+			url: "https://explorer.globaltoken.org/api/addr/"+redeem.addr+"/utxo",
 			dataType: "json",
 			error: function(data) {
 				$("#redeemFromStatus").removeClass('hidden').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Unexpected error, unable to retrieve unspent outputs!');
@@ -825,7 +827,7 @@ $(document).ready(function() {
 					data = $.parseJSON(json);
 				}
 				if((data[0].address && data[0].txid) && data[0].address==redeem.addr){
-					$("#redeemFromAddress").removeClass('hidden').html('<span class="glyphicon glyphicon-info-sign"></span> Retrieved unspent inputs from address <a href="http://explorer.globaltoken.org/address/'+redeem.addr+'" target="_blank">'+redeem.addr+'</a>');
+					$("#redeemFromAddress").removeClass('hidden').html('<span class="glyphicon glyphicon-info-sign"></span> Retrieved unspent inputs from address <a href="https://explorer.globaltoken.org/address/'+redeem.addr+'" target="_blank">'+redeem.addr+'</a>');
 					for(var i in data){
 						var o = data[i];
 						var tx = ((""+o.txid).match(/.{1,2}/g).reverse()).join("")+'';
@@ -912,7 +914,7 @@ $(document).ready(function() {
 		$(thisbtn).val('Please wait, loading...').attr('disabled',true);
 		$.ajax ({
 			type: "POST",
-			url: "http://explorer.globaltoken.org/api/tx/send",
+			url: "https://explorer.globaltoken.org/api/tx/send",
 			data: {"rawtx":$("#rawTransaction").val()},
 			dataType: "json",
 			error: function(data) {
