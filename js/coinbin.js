@@ -127,10 +127,11 @@ $(document).ready(function() {
 
 				// and finally broadcast!
 				tx2.broadcast(function(data){
-					if($(data).find("result").text()=="1"){
-						$("#walletSendConfirmStatus").removeClass('hidden').addClass('alert-success').html("txid: "+$(data).find("txid").text());
+					
+					if(data.txid && data.txid.length > 0){
+						$("#walletSendConfirmStatus").removeClass('hidden').addClass('alert-success').html("txid: "+data.txid);
 					} else {
-						$("#walletSendConfirmStatus").removeClass('hidden').addClass('alert-danger').html(unescape($(data).find("response").text()).replace(/\+/g,' '));
+						$("#walletSendConfirmStatus").removeClass('hidden').addClass('alert-danger').html(data.responseText);
 						$("#walletSendFailTransaction").removeClass('hidden');
 						$("#walletSendFailTransaction textarea").val(signed);
 						thisbtn.attr('disabled',false);
@@ -229,10 +230,8 @@ $(document).ready(function() {
 		var tx = coinjs.transaction();
 		$("#walletLoader").removeClass("hidden");
 		coinjs.addressBalance($("#walletAddress").html(),function(data){
-			var json = '[{"balance":"'+data[0]+'"}]';
-			data = $.parseJSON(json);
-			if(data[0].balance > 1){
-				var v = data[0].balance/100000000;
+			if(data > 1){
+				var v = data/100000000;
 				$("#walletBalance").html(v+" GLT").attr('rel',v).fadeOut().fadeIn();
 			} else {
 				$("#walletBalance").html("0.00 GLT").attr('rel',v).fadeOut().fadeIn();

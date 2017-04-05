@@ -21,7 +21,7 @@
 	coinjs.developer = 'GUsQEsFnJkYi1HLEmPGqfz6LMvyMx3RAkT'; // globaltoken
 
 	/* bit(coinb.in) api vars */
-	coinjs.host = ('https:'==document.location.protocol?'https://':'http://')+'explorer.globaltoken.org/api/';
+	coinjs.host = 'https://explorer.globaltoken.org/api/';
 	coinjs.uid = '1';
 	coinjs.key = '12345678901234567890123456789012';
 
@@ -273,7 +273,42 @@
 
 	/* retreive the balance from a given address */
 	coinjs.addressBalance = function(address, callback){
-		coinjs.ajax(coinjs.host+'addr/'+address+'/balance', callback, "GET");
+		$.ajax ({
+			type: "GET",
+			cache: false,
+			url: "https://explorer.globaltoken.org/api/addr/"+address+"/utxo",
+			dataType: "json",
+			error: function(data) {
+				callback(data);
+			},
+			success: function(data) {
+				if(data[0] == undefined)
+				{
+					var json = '[{"address":"'+address+'","txid":"[]"}]';
+					data = $.parseJSON(json);
+				}
+				if((data[0].address && data[0].txid) && data[0].address==address){
+					var finalamount = 0;
+					for(i = 0; i < data.length; i++){
+						var o = data[i];
+						var amount = o.amount * 100000000;
+						finalamount = finalamount + amount;
+					}
+					callback(finalamount);
+				} else {
+					callback(data);
+				}
+			}
+		});
+		/*var cachebalance = function(data)
+		{
+			var cachebalance2 = function(data2)
+			{
+				callback(data + data2);
+			}
+			coinjs.ajax(coinjs.host+'addr/'+address+'/unconfirmedBalance', cachebalance2, "GET");
+		}
+		coinjs.ajax(coinjs.host+'addr/'+address+'/balance', cachebalance, "GET");*/
 	}
 
 	/* decompress an compressed public key */
@@ -851,7 +886,7 @@
 
 		/* list unspent transactions */
 		r.listUnspent = function(address, callback) {
-			coinjs.ajax(coinjs.host+'?uid='+coinjs.uid+'&key='+coinjs.key+'&setmodule=addresses&request=unspent&address='+address+'&r='+Math.random(), callback, "GET");
+			coinjs.ajax(coinjs.host+'addr/'+address+'/utxo', callback, "GET");
 		}
 
 		/* add unspent to transaction */
@@ -863,19 +898,24 @@
 				var value = 0;
 				var total = 0;
 				var x = {};
+				
+				for(var i in data){
+						var o = data[i];
+						var txhash = ((""+o.txid)+'');
+						if(txhash.match(/^[a-f0-9]+$/)){
+							var n = o.vout;
+							var script = o.scriptPubKey;
+							var amount = o.amount;
+							self.addinput(txhash, n, script);
+							
+							var cachevalue = o.amount * 100000000;
+							
+							value += cachevalue;
+							total++;
+						}
+					}
 
-				if (window.DOMParser) {
-					parser=new DOMParser();
-					xmlDoc=parser.parseFromString(data,"text/xml");
-				} else {
-					xmlDoc=new ActiveXObject("Microsoft.XMLDOM");
-					xmlDoc.async=false;
-					xmlDoc.loadXML(data);
-				}
-
-				var unspent = xmlDoc.getElementsByTagName("unspent")[0];
-
-				for(i=1;i<=unspent.childElementCount;i++){
+				/*for(i=1;i<=unspent.childElementCount;i++){
 					var u = xmlDoc.getElementsByTagName("unspent_"+i)[0]
 					var txhash = (u.getElementsByTagName("tx_hash")[0].childNodes[0].nodeValue).match(/.{1,2}/g).reverse().join("")+'';
 					var n = u.getElementsByTagName("tx_output_n")[0].childNodes[0].nodeValue;
@@ -886,8 +926,8 @@
 					value += u.getElementsByTagName("value")[0].childNodes[0].nodeValue*1;
 					total++;
 				}
-
-				x.unspent = $(xmlDoc).find("unspent");
+				*/
+				x.unspent = data;
 				x.value = value;
 				x.total = total;
 				return callback(x);
@@ -907,7 +947,22 @@
 		/* broadcast a transaction */
 		r.broadcast = function(callback, txhex){
 			var tx = txhex || this.serialize();
-			coinjs.ajax(coinjs.host+'?uid='+coinjs.uid+'&key='+coinjs.key+'&setmodule=globaltoken&request=sendrawtransaction&rawtx='+tx+'&r='+Math.random(), callback, "GET");
+			$.ajax ({
+			type: "POST",
+			url: "https://explorer.globaltoken.org/api/tx/send",
+			data: {"rawtx":tx},
+			dataType: "json",
+			error: function(data) {
+				callback(data);
+			},
+            success: function(data) {
+				if(data.txid && data.txid.length > 0){
+					callback(data);
+				} else {
+					callback(data);
+				}				
+			}
+		});
 		}
 
 		/* generate the transaction hash to sign from a transaction input */
@@ -1465,33 +1520,6 @@
 
 	/* raw ajax function to avoid needing bigger frame works like jquery, mootools etc */
 	coinjs.ajax = function(u, f, m, a){
-		/*var x = false;
-		try{
-			x = new ActiveXObject('Msxml2.XMLHTTP')
-		} catch(e) {
-			try {
-				x = new ActiveXObject('Microsoft.XMLHTTP')
-			} catch(e) {
-				x = new XMLHttpRequest()
-			}
-		}
-
-		if(x==false) {
-			return false;
-		}
-
-		x.open(m, u, true);
-		x.onreadystatechange=function(){
-			if((x.readyState==4) && f)
-				f(x.responseText);
-		};
-
-		if(m == 'POST'){
-			x.setRequestHeader('Content-type','application/x-www-form-urlencoded');
-		}
-
-		x.send(a);*/
-		
 		$.ajax ({
 			type: m,
 			cache: false,
@@ -1501,10 +1529,23 @@
 				f(data);
 			},
 			success: function(data) {
-				f(data);
-			},
-			complete: function(data, status) {
-				f(data);
+				var result = 0;
+				try 
+				{
+					data = $.parseJSON(data);
+					result = 1;
+				} 
+				catch (e) 
+				{
+					f(data);
+				}
+				finally 
+				{
+					if(result == 1) 
+					{ 
+						f(data);
+					}
+				} 
 			}
 		});
 	}
